@@ -3,33 +3,81 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var DELAY = 30000;
 
   var appId = Fliplet.Env.get('appId');
-  var updateStorageKey = 'fl_notifications_' + appId;
-  var updateStorage;
+  var storageKey = 'fl_notifications_' + appId;
+  var storage;
   var instance;
+  var clearNewCountOnUpdate = false;
 
-  function saveUpdates(data) {
+  function saveCounts(data) {
     data = data || {};
 
-    updateStorage.updatedAt = data.updatedAt || new Date().getTime();
+    storage.updatedAt = Date.now();
+
+    if (clearNewCountOnUpdate || !storage.clearedAt) {
+      storage.clearedAt = Date.now();
+    }
+
     if (data.hasOwnProperty('unreadCount')) {
-      var unreadCount = 0;
-      unreadCount = parseInt(data.unreadCount, 0);
-      if (isNaN(unreadCount)) {
-        unreadCount = 0;
-      }
-      unreadCount = Math.max(0, unreadCount);
-      updateStorage.unreadCount = unreadCount;
+      storage.unreadCount = Math.max(0, parseInt(data.unreadCount, 10) || 0);
     }
 
     if (data.hasOwnProperty('newCount')) {
-      updateStorage.newCount = Math.min(updateStorage.unreadCount, data.newCount);
+      storage.newCount = Math.max(0, Math.min(storage.unreadCount, parseInt(data.newCount, 10) || 0));
     }
 
-    return Fliplet.App.Storage.set(updateStorageKey, updateStorage);
+    return Fliplet.App.Storage.set(storageKey, storage);
+  }
+
+  function clearNewCount() {
+    return saveCounts({
+      updatedAt: storage.updatedAt,
+      newCount: 0
+    });
+  }
+
+  function markAsRead(notifications) {
+    return instance.markNotificationsAsRead(notifications)
+      .then(function (results) {
+        results = results || {};
+        affected = results.affected || 0;
+        return instance.unread.count();
+      })
+      .then(function (value) {
+        unreadCount = value;
+        return saveCounts({
+          unreadCount: unreadCount,
+          newCount: 0
+        });
+      })
+      .then(function () {
+        return Promise.resolve({
+          affected: affected,
+          unreadCount: unreadCount
+        });
+      });
+  }
+
+  function markAllAsRead() {
+    var affected;
+    return instance.markNotificationsAsRead('all')
+      .then(function (results) {
+        results = results || {};
+        affected = results.affected || 0;
+        return saveCounts({
+          unreadCount: 0,
+          newCount: 0
+        });
+      })
+      .then(function () {
+        return Promise.resolve({
+          affected: affected,
+          unreadCount: 0
+        });
+      });
   }
 
   function addNotificationBadges() {
-    if (isNaN(updateStorage.newCount) || updateStorage.newCount <= 0) {
+    if (isNaN(storage.newCount) || storage.newCount <= 0) {
       $('.add-notification-badge')
         .removeClass('has-notification-badge')
         .find('.notification-badge').remove();
@@ -39,11 +87,58 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     $('.add-notification-badge')
       .addClass('has-notification-badge')
       .find('.notification-badge').remove().end()
-      .append('<div class="notification-badge">' + updateStorage.newCount + '</div>');
+      .append('<div class="notification-badge">' + storage.newCount + '</div>');
   }
 
-  function broadcastUpdates() {
-    Fliplet.Hooks.run('notificationsUpdated', updateStorage);
+  function broadcastCountUpdates() {
+    Fliplet.Hooks.run('notificationCountsUpdated', storage);
+  }
+
+  function isPolling() {
+    return instance.isPolling();
+  }
+
+  function poll(options) {
+    return instance.poll(options);
+  }
+
+  function getNewNotifications(ts) {
+    return Promise.all([
+      instance.unread.count({ createdAt: { $gt: ts } }),
+      instance.unread.count()
+    ]);
+  }
+
+  function checkForUpdates(ts) {
+    var countsUpdated = false;
+
+    return getNewNotifications(ts)
+      .then(function (counts) {
+        var data = {
+          updatedAt: Date.now(),
+          unreadCount: counts[1],
+          newCount: counts[0]
+        };
+        var comparisonProps = ['unreadCount', 'newCount'];
+
+        countsUpdated = !_.isEqual(_.pick(data, comparisonProps), _.pick(storage, comparisonProps));
+
+        return saveCounts(data);
+      })
+      .then(createUpdateTimer)
+      .then(addNotificationBadges)
+      .then(broadcastCountUpdates)
+      .then(function () {
+        if (!countsUpdated) {
+          return Promise.resolve();
+        }
+
+        return poll();
+      });
+  }
+
+  function checkForUpdatesSinceLastClear() {
+    return checkForUpdates(storage.clearedAt || Date.now());
   }
 
   function setTimer(ms) {
@@ -51,11 +146,11 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
       ms = 0;
     }
 
-    setTimeout(checkForUpdates, ms);
+    setTimeout(checkForUpdatesSinceLastClear, ms);
   }
 
   function createUpdateTimer() {
-    var diff = new Date().getTime() - updateStorage.updatedAt;
+    var diff = Date.now() - storage.updatedAt;
     if (diff > DELAY) {
       setTimer(0);
       return;
@@ -65,69 +160,54 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     setTimer(DELAY - diff);
   }
 
-  function getNewNotifications(ts) {
-    return Promise.all([
-      instance.unread.count(ts ? ts : updateStorage.updatedAt),
-      instance.unread.count()
-    ]);
-  }
+  function init(options) {
+    options = options || {};
 
-  function checkForUpdates(ts) {
-    return getNewNotifications(ts)
-      .then(function (counts) {
-        var newCountSinceUpdatedAt = counts[0];
-        var unreadCount = counts[1];
-        var data = {
-          unreadCount: unreadCount,
-          newCount: updateStorage.newCount + newCountSinceUpdatedAt
-        };
+    clearNewCountOnUpdate = !!options.clearNewCountOnUpdate;
 
-        if (ts) {
-          data.updatedAt = ts;
-        }
-
-        return saveUpdates(data);
-      })
-      .then(createUpdateTimer)
-      .then(addNotificationBadges)
-      .then(broadcastUpdates);
-  }
-
-  function init() {
-    var timeNow = new Date().getTime();
     var defaults = {
-      updatedAt: timeNow,
       newCount: 0,
       unreadCount: 0
     };
 
-    Fliplet.Hooks.on('checkNotifications', checkForUpdates);
-    instance = Fliplet.Notifications.init();
-
-    return Fliplet.App.Storage.get(updateStorageKey, {
+    return Fliplet.App.Storage.get(storageKey, {
       defaults: defaults
     })
       .then(function (value) {
-        updateStorage = value;
+        storage = value;
+
+        instance = Fliplet.Notifications.init({
+          batchSize: BATCH_SIZE,
+          onFirstResponse: function (err, notifications) {
+            Fliplet.Hooks.run('notificationFirstResponse', err, notifications);
+          }
+        });
+        instance.stream(function (notification) {
+          Fliplet.Hooks.run('notificationStream', notification);
+        });
+
+        // @HACK Timeout to allow custom code to add .add-notification-badge to elements before running addNotificationBadges()
         setTimeout(function () {
           // Adding a timeout to allow page JS to modify page DOM
           addNotificationBadges();
-          broadcastUpdates();          
-        }, 0);
+          broadcastCountUpdates();
 
-        if (updateStorage.updatedAt === timeNow) {
-          setTimer(0);
-        } else {
-          createUpdateTimer();
-        }
-
-        return Promise.resolve();
+          if (!storage.updatedAt || options.startCheckingUpdates) {
+            setTimer(0);
+          } else {
+            createUpdateTimer();
+          }
+        }, 200);
       });
   }
 
   return {
     init: init,
     checkForUpdates: checkForUpdates,
-    saveUpdates: saveUpdates
+    markAsRead: markAsRead,
+    markAllAsRead: markAllAsRead,
+    isPolling: isPolling,
+    poll: poll,
+    clearNewCount: clearNewCount
   };
 });
