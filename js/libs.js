@@ -179,18 +179,19 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
           Fliplet.Hooks.run('notificationStream', notification);
         });
 
-        // @HACK Timeout to allow custom code to add .add-notification-badge to elements before running addNotificationBadges()
-        setTimeout(function () {
-          // Adding a timeout to allow page JS to modify page DOM
-          addNotificationBadges();
-          broadcastCountUpdates();
+        Fliplet().then(function () {
+          setTimeout(function () {
+            // Adding a timeout to allow page JS to modify page DOM first
+            addNotificationBadges();
+            broadcastCountUpdates();
 
-          if (!storage.updatedAt || options.startCheckingUpdates) {
-            setTimer(0);
-          } else {
-            createUpdateTimer();
-          }
-        }, 200);
+            if (!storage.updatedAt || options.startCheckingUpdates) {
+              setTimer(0);
+            } else {
+              createUpdateTimer();
+            }
+          }, 0);
+        });
       });
   }
 
