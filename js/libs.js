@@ -28,13 +28,6 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     return Fliplet.App.Storage.set(storageKey, storage);
   }
 
-  function clearNewCount() {
-    return saveCounts({
-      updatedAt: storage.updatedAt,
-      newCount: 0
-    });
-  }
-
   function markAsRead(notifications) {
     return instance.markNotificationsAsRead(notifications)
       .then(function (results) {
@@ -207,7 +200,6 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     markAsRead: markAsRead,
     markAllAsRead: markAllAsRead,
     isPolling: isPolling,
-    poll: poll,
-    clearNewCount: clearNewCount
+    poll: poll
   };
 });
