@@ -3,7 +3,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var DELAY = 30000;
 
   var appId = Fliplet.Env.get('appId');
-  var storageKey = 'fl_notifications_' + appId;
+  var storageKey = 'flAppNotifications';
   var storage;
   var instance;
   var clearNewCountOnUpdate = false;
