@@ -165,7 +165,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   }
 
   function attachObservers() {
-    Fliplet.Hooks.on('pushNotificationReceived', function () {
+    Fliplet.Hooks.on('pushNotification', function () {
       setTimer(0);
     });
   }
