@@ -164,6 +164,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     setTimer(DELAY - diff);
   }
 
+  function attachObservers() {
+    Fliplet.Hooks.on('pushNotificationReceived', function () {
+      setTimer(0);
+    });
+  }
+
   function init(options) {
     options = options || {};
 
@@ -205,6 +211,8 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
         });
       });
   }
+
+  attachObservers();
 
   return {
     init: init,
