@@ -7,6 +7,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var storage;
   var instance;
   var clearNewCountOnUpdate = false;
+  var timer;
 
   function saveCounts(data) {
     data = data || {};
@@ -139,7 +140,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
       ms = 0;
     }
 
-    setTimeout(checkForUpdatesSinceLastClear, ms);
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    timer = setTimeout(checkForUpdatesSinceLastClear, ms);
   }
 
   function createUpdateTimer() {
