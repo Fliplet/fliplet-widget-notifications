@@ -105,6 +105,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
   function checkForUpdates(ts) {
     var countsUpdated = false;
+    ts = ts || Date.now();
 
     return getNewNotifications(ts)
       .then(function (counts) {
