@@ -7,6 +7,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var storage;
   var instance;
   var clearNewCountOnUpdate = false;
+  var timer;
 
   function saveCounts(data) {
     data = data || {};
@@ -104,6 +105,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
   function checkForUpdates(ts) {
     var countsUpdated = false;
+    ts = ts || Date.now();
 
     return getNewNotifications(ts)
       .then(function (counts) {
@@ -115,6 +117,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
         var comparisonProps = ['unreadCount', 'newCount'];
 
         countsUpdated = !_.isEqual(_.pick(data, comparisonProps), _.pick(storage, comparisonProps));
+
+        if (clearNewCountOnUpdate) {
+          data.newCount = 0;
+        }
 
         return saveCounts(data);
       })
@@ -139,7 +145,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
       ms = 0;
     }
 
-    setTimeout(checkForUpdatesSinceLastClear, ms);
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    timer = setTimeout(checkForUpdatesSinceLastClear, ms);
   }
 
   function createUpdateTimer() {
@@ -151,6 +162,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
     //Set the timer with the remaining time
     setTimer(DELAY - diff);
+  }
+
+  function attachObservers() {
+    Fliplet.Hooks.on('pushNotification', function () {
+      setTimer(0);
+    });
   }
 
   function init(options) {
@@ -194,6 +211,8 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
         });
       });
   }
+
+  attachObservers();
 
   return {
     init: init,
