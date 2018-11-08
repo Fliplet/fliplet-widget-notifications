@@ -117,6 +117,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
         countsUpdated = !_.isEqual(_.pick(data, comparisonProps), _.pick(storage, comparisonProps));
 
+        if (clearNewCountOnUpdate) {
+          data.newCount = 0;
+        }
+
         return saveCounts(data);
       })
       .then(createUpdateTimer)
