@@ -192,11 +192,8 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
             Fliplet.Hooks.run('notificationFirstResponse', err, notifications);
           }
         });
-
         instance.stream(function (notification) {
           Fliplet.Hooks.run('notificationStream', notification);
-        }, {
-          offline: Fliplet.Env.is('native')
         });
 
         Fliplet().then(function () {
