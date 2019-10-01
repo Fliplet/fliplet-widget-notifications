@@ -1,6 +1,5 @@
 Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var BATCH_SIZE = 20;
-  var DELAY = 30000;
 
   var appId = Fliplet.Env.get('appId');
   var storageKey = 'flAppNotifications';
@@ -103,9 +102,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     ]);
   }
 
-  function checkForUpdates(ts) {
+  function checkForUpdates(ts, opt) {
     var countsUpdated = false;
     ts = ts || Date.now();
+    opt = opt || {};
 
     return getNewNotifications(ts)
       .then(function (counts) {
@@ -124,11 +124,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
         return saveCounts(data);
       })
-      .then(createUpdateTimer)
       .then(addNotificationBadges)
       .then(broadcastCountUpdates)
       .then(function () {
-        if (!countsUpdated) {
+        if (!countsUpdated && !opt.forcePolling) {
           return Promise.resolve();
         }
 
@@ -151,17 +150,6 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     }
 
     timer = setTimeout(checkForUpdatesSinceLastClear, ms);
-  }
-
-  function createUpdateTimer() {
-    var diff = Date.now() - storage.updatedAt;
-    if (diff > DELAY) {
-      setTimer(0);
-      return;
-    }
-
-    //Set the timer with the remaining time
-    setTimer(DELAY - diff);
   }
 
   function attachObservers() {
@@ -204,8 +192,6 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
             if (!storage.updatedAt || options.startCheckingUpdates) {
               setTimer(0);
-            } else {
-              createUpdateTimer();
             }
           }, 0);
         });
