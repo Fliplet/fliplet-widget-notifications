@@ -104,6 +104,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
   function checkForUpdates(ts, opt) {
     var countsUpdated = false;
+
+    if (typeof ts === 'object') {
+      opt = ts;
+      ts = Date.now();
+    }
+
     ts = ts || Date.now();
     opt = opt || {};
 
