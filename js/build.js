@@ -6,5 +6,7 @@ Fliplet.Widget.instance('fliplet-widget-notifications-1-0-0', function (data) {
   Fliplet.Hooks.run('beforeNotificationsInit', data, options).then(function () {
     var notifications = new Notifications(data);
     notifications.init(options);
+
+    Fliplet.Hooks.run('afterNotificationsInit', notifications);
   });
 });
