@@ -6,11 +6,8 @@ Fliplet().then(function () {
     var options = {};
 
     Fliplet.Hooks.run('beforeNotificationsInit', data, options).then(function () {
-      console.log('initialising', data, options)
-
       var notifications = new Notifications(data);
       notifications.init(options);
-      
 
       Fliplet.Hooks.run('afterNotificationsInit', notifications);
     });
