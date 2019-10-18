@@ -11,6 +11,8 @@ Fliplet().then(function () {
       Fliplet.Hooks.run('beforeNotificationsInit', data, options).then(function () {
         var notifications = new Notifications(data);
         notifications.init(options);
+
+        Fliplet.Hooks.run('afterNotificationsInit', notifications);
       });
     });
   });
