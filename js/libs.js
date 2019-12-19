@@ -7,6 +7,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   var instance;
   var clearNewCountOnUpdate = false;
   var timer;
+  var instanceReady;
+  var instancePromise = new Promise(function (resolve) {
+    instanceReady = resolve;
+  });
 
   function saveCounts(data) {
     data = data || {};
@@ -164,6 +168,12 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     });
   }
 
+  function getInstance() {
+    return instancePromise.then(function () {
+      return instance;
+    });
+  }
+
   function init(options) {
     options = options || {};
 
@@ -187,7 +197,8 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
             Fliplet.Hooks.run('notificationFirstResponse', err, notifications);
           }
         });
-        
+        instanceReady();
+
         instance.stream(function (notification) {
           Fliplet.Hooks.run('notificationStream', notification);
         });
@@ -214,6 +225,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     markAsRead: markAsRead,
     markAllAsRead: markAllAsRead,
     isPolling: isPolling,
-    poll: poll
+    poll: poll,
+    getInstance: getInstance
   };
 });
