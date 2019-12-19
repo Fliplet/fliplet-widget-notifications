@@ -7,9 +7,10 @@ Fliplet().then(function () {
 
     Fliplet.Notifications.Scopes.get().then(function (scope) {
       data.scope = scope;
-      
+
       Fliplet.Hooks.run('beforeNotificationsInit', data, options).then(function () {
         var notifications = new Notifications(data);
+
         notifications.init(options);
 
         Fliplet.Hooks.run('afterNotificationsInit', notifications);
