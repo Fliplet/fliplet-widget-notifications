@@ -73,8 +73,18 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
       });
   }
 
-  function addNotificationBadges() {
-    if (isNaN(storage.newCount) || storage.newCount <= 0) {
+  function addNotificationBadges(options) {
+    if (typeof options !== 'undefined' && !_.isObject(options)) {
+      options = { count: options };
+    }
+
+    options = options || {};
+
+    var count = options.count || storage.newCount;
+
+    count = parseInt(count, 10);
+
+    if (isNaN(count) || count <= 0) {
       $('.add-notification-badge')
         .removeClass('has-notification-badge')
         .find('.notification-badge').remove();
@@ -84,7 +94,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     $('.add-notification-badge')
       .addClass('has-notification-badge')
       .find('.notification-badge').remove().end()
-      .append('<div class="notification-badge">' + storage.newCount + '</div>');
+      .append('<div class="notification-badge">' + count + '</div>');
   }
 
   function broadcastCountUpdates() {
@@ -208,6 +218,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
             // Adding a timeout to allow page JS to modify page DOM first
             addNotificationBadges();
             broadcastCountUpdates();
+            checkForUpdatesSinceLastClear();
 
             if (!storage.updatedAt || options.startCheckingUpdates) {
               setTimer(0);
@@ -226,6 +237,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
     markAllAsRead: markAllAsRead,
     isPolling: isPolling,
     poll: poll,
-    getInstance: getInstance
+    getInstance: getInstance,
+    addNotificationBadges: addNotificationBadges
   };
 });
