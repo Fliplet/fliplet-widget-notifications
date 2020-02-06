@@ -208,6 +208,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
             // Adding a timeout to allow page JS to modify page DOM first
             addNotificationBadges();
             broadcastCountUpdates();
+            checkForUpdatesSinceLastClear();
 
             if (!storage.updatedAt || options.startCheckingUpdates) {
               setTimer(0);
