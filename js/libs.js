@@ -74,6 +74,10 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
   }
 
   function addNotificationBadges(options) {
+    if (typeof options !== 'undefined' && !_.isObject(options)) {
+      options = { count: options };
+    }
+
     options = options || {};
 
     var count = options.count || storage.newCount;
