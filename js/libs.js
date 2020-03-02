@@ -211,7 +211,7 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
 
         instance.stream(function (notification) {
           Fliplet.Hooks.run('notificationStream', notification);
-        });
+        }, { offline: true });
 
         Fliplet().then(function () {
           setTimeout(function () {
