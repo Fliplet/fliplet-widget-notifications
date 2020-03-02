@@ -203,7 +203,6 @@ Fliplet.Registry.set('fliplet-widget-notifications:1.0:core', function (data) {
         instance = Fliplet.Notifications.init({
           batchSize: BATCH_SIZE,
           scope: data.scope,
-          includeDrafts: true,
           onFirstResponse: function (err, notifications) {
             Fliplet.Hooks.run('notificationFirstResponse', err, notifications);
           }
